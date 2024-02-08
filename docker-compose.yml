@@ -1,0 +1,63 @@
+version: '3.8'
+services:
+  web1: &web
+    build: .
+    hostname: web01
+    ports: 
+      - "8081:8080"
+    environment:
+      - DB_HOSTNAME=db
+    volumes:
+      - .:/usr/src/app
+    depends_on:
+      - db
+    deploy:
+      resources:
+        limits:
+          cpus: "0.6"
+          memory: "200MB"
+
+  web2:
+    <<: *web 
+    hostname: web02
+    environment:
+      - DB_HOSTNAME=db
+    ports:
+      - "8082:8080"
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "9999:9999"
+    depends_on:
+      - web1
+      - web2
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    deploy:
+      resources:
+        limits:
+          cpus: "0.17"
+          memory: "10MB"
+
+  db:
+    image: postgres:latest
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    environment:
+      - POSTGRES_PASSWORD=123
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=rinha
+    deploy:
+      resources:
+        limits:
+          cpus: "0.13"
+          memory: "140MB"
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    driver: bridge
+    name: rinha
