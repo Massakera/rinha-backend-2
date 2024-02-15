@@ -3,6 +3,7 @@ from fastapi import FastAPI, HTTPException, Path
 from database.config import database
 from database.db_models import clientes, transactions, saldos   # Corrected import
 from sqlalchemy import select, desc
+import logging
 
 from domain.models import StatementResponse, TransactionRequest
 
@@ -10,18 +11,17 @@ app = FastAPI()
 
 @app.post("/clientes/{client_id}/transacoes", response_model=dict)
 async def transacao(client_id: int, request: TransactionRequest):
-    async with database.transaction(): 
+    async with database.transaction():
         client_query = select([clientes.c.limite, saldos.c.valor.label("saldo")]).select_from(clientes.join(saldos, clientes.c.id == saldos.c.cliente_id)).where(clientes.c.id == client_id).with_for_update()
         client = await database.fetch_one(client_query)
-
+        
         if client is None:
             raise HTTPException(status_code=404, detail="Cliente não encontrado")
-
+        
         new_saldo = client['saldo'] + (request.valor if request.tipo == 'c' else -request.valor)
-
         if request.tipo == 'd' and new_saldo < -client['limite']:
             raise HTTPException(status_code=422, detail="Saldo insuficiente")
-
+        
         transaction_dict = {
             "cliente_id": client_id,
             "valor": request.valor,
@@ -29,11 +29,9 @@ async def transacao(client_id: int, request: TransactionRequest):
             "descricao": request.descricao
         }
         await database.execute(transactions.insert().values(**transaction_dict))
-        
         await database.execute(saldos.update().where(saldos.c.cliente_id == client_id).values(valor=new_saldo))
 
     return {"limite": client['limite'], "saldo": new_saldo}
-
 
 @app.get("/clientes/{client_id}/extrato", response_model=StatementResponse)
 async def extrato(client_id: int = Path(..., gt=0)):

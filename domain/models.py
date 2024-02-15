@@ -1,15 +1,21 @@
-from typing import List
-from pydantic import BaseModel, Field
+from enum import Enum
+from pydantic import BaseModel, Field, StringConstraints
+from typing import Annotated, List, Literal
 from datetime import datetime
 
+class TransactionType(str, Enum):
+    CREDIT = 'c'
+    DEBIT = 'd'
+
 class TransactionRequest(BaseModel):
-    valor: int
-    tipo: str
-    descricao: str
+    valor: Annotated[int, Field(strict=True, gt=0)]  
+    tipo: TransactionType  
+    descricao: Annotated[str, StringConstraints(min_length=1, max_length=10)]
+
 
 class Transaction(BaseModel):
     valor: int
-    tipo: str
+    tipo: Literal['c', 'd'] 
     descricao: str
     realizada_em: datetime = Field(default_factory=datetime.utcnow)
 
