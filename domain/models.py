@@ -1,27 +1,23 @@
-import datetime
 from typing import List
-from pydantic import BaseModel, constr, PositiveInt
+from pydantic import BaseModel, Field
+from datetime import datetime
 
 class TransactionRequest(BaseModel):
-    valor: PositiveInt
-    tipo: str
-    descricao: constr(min_length=1, max_length=10)
-
-class TransactionResponse(BaseModel):
-    limite: int
-    saldo: int
-
-class TransactionDetail(BaseModel):
     valor: int
     tipo: str
     descricao: str
-    realizada_em: datetime.datetime
 
-class SaldoDetail(BaseModel):
+class Transaction(BaseModel):
+    valor: int
+    tipo: str
+    descricao: str
+    realizada_em: datetime = Field(default_factory=datetime.utcnow)
+
+class SaldoInfo(BaseModel):
     total: int
-    data_extrato: datetime.datetime
+    data_extrato: datetime = Field(default_factory=datetime.utcnow)
     limite: int
 
 class StatementResponse(BaseModel):
-    saldo: SaldoDetail
-    ultimas_transacoes: List[TransactionDetail]
+    saldo: SaldoInfo
+    ultimas_transacoes: List[Transaction]

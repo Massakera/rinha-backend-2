@@ -14,21 +14,19 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.6"
-          memory: "200MB"
+          cpus: "0.5"
+          memory: "180MB"
 
   web2:
     <<: *web 
     hostname: web02
-    environment:
-      - DB_HOSTNAME=db
     ports:
       - "8082:8080"
 
   nginx:
     image: nginx:latest
     ports:
-      - "9999:9999"
+      - "9999:9999"  
     depends_on:
       - web1
       - web2
@@ -37,13 +35,14 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.17"
-          memory: "10MB"
+          cpus: "0.15" 
+          memory: "50MB" 
 
   db:
     image: postgres:latest
     volumes:
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data  
     environment:
       - POSTGRES_PASSWORD=123
       - POSTGRES_USER=admin
@@ -51,8 +50,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.13"
-          memory: "140MB"
+          cpus: "0.35" 
+          memory: "270MB"  
 
 volumes:
   postgres_data:
